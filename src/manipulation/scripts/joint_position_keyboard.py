@@ -133,10 +133,18 @@ def map_keyboard():
         move(command, side, name_list, delta, set_j)
         rospy.sleep(1.0)
 
-        gripper = baxter_gripper.Gripper('left')
-        gripper.close(block=True)
-        rospy.sleep(1.0)
-        print('CLOSE Done!\n')      
+        control = raw_input('Controll gripper: ')
+        if control == '1':
+            gripper = baxter_gripper.Gripper('left')
+            print('Controlling gripper!!!!\n')
+            gripper.close(block=True)
+            print('Control Gripper Finished\n')
+            rospy.sleep(1.0)
+        else:
+        	gripper.open(block=True)
+        	rospy.sleep(1.0)
+	    	
+        # print('CLOSE Done!\n')      
 
         command = 'next' 
         move(command, side, name_list, delta, set_j)
