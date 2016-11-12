@@ -10,20 +10,24 @@ from baxter_interface import CHECK_VERSION
 import constant_parameters
 from constant_parameters import Joint_Names
 
+from numpy import pi
+from sensor_msgs.msg import Image # ROS Image message, Warning!! This is different from OpenCV Image message.
+import cv_bridge
 
 class PlayCube():
     def __init__(self):
     	print('\nStart Initialization!!!!\n')
 		##### Initialize AR_tag transforms #####
         rospy.init_node('master', anonymous=True)
-        self.listener = tf.TransformListener()
+        self.TFlistener = tf.TransformListener()
+
+        ##### AR marker Information #####
+        self.cube_table = {'red':'ar_marker_1', 'blue':'ar_marker_2', 'yellow':'ar_marker_3', 
+                          'white':'ar_marker_4', 'black':'ar_marker_5', 'green': 'ar_marker_6'}
 
 		###### Initialize moveit_commander #####
         moveit_commander.roscpp_initialize('/joint_states:=/robot/joint_states')
 
-        ###### control constant parameters #####
-        
-        self.count = 0
         ###### Initialize MoveIt for both arms #####
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
@@ -43,10 +47,20 @@ class PlayCube():
         self.Left_Gripper.set_holding_force(70)
         self.Right_Gripper.set_holding_force(70)
 
+        ###### control constant parameters #####      
+        self.count = 0
+        self.Holder_Arm = self.Left_Arm # default, changing during playing
+        self.Holder_Gripper = self.Left_Gripper
+        self.Rotate_Arm = self.Right_Arm # default, changing during playing
+        self.Rotate_Gripper = self.Right_Gripper
+
         ##### Set Camera #####
         self.Head_Camera = baxter_interface.CameraController('head_camera')
         self.Left_Hand_Camera = baxter_interface.CameraController('left_hand_camera')
         self.Right_Hand_Camera = baxter_interface.CameraController('right_hand_camera')
+
+        ##### Initialize Camera Information Subscriber #####
+        rospy.init_node('Camera_Iformation_Subscriber', anonymous=True)
 
 		##### Verify robot is enabled  #####
         print("Getting robot state... ")
@@ -58,6 +72,7 @@ class PlayCube():
 
         print('\nFinish Initialization!!!\n')
 
+        
 
 
     #move left gripper to a previously tested position, parameters from constant_parameters.joint_states
@@ -88,8 +103,10 @@ class PlayCube():
 
 
     #AR_marker specifies which face to grab. Gripper specifies which gripper to use.
-    def Grab_Cube(self, Arm, AR_marker, Accuracy=0.03):
-        (trans,rot) = self.listener.lookupTransform('/base', AR_marker,rospy.Time(0))
+    def Grab_Cube(self, Arm, Gripper, AR_marker, Accuracy=0.03):
+    	self.Gripper_Control(Gripper,'open')
+
+        (trans,rot) = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
 
         Goal_Pose = Pose()
         Goal = []
@@ -109,6 +126,74 @@ class PlayCube():
                                Accuracy,        # eef_step
                                0.0)     
         Arm.execute(plan)
+        self.Gripper_Control(Gripper, 'close')
+
+    #Make holder arm away from cube in order to make another arm hold the cube
+    def Leave_Cube(self, Arm, Gripper):
+    	self.Gripper_Control(Gripper,'open')
+    	
+    	#get current joint angles
+    	joint_angles = Arm.joint_angles()
+
+    	# The following should be constant parameters. I need to test it.
+    	# joint_angles[Arm.name+'_w1'] = 
+    	# joint_angles[Arm.name+'_w0'] = 
+
+    	self.Move_Joints(joint_angles, Arm) # Now this arm is away from the cube now
+
+   	# Change holder arm to rotate arm, change rotate arm to holder arm
+   	def Exchange_Arm_Role(self):	
+   		TEMP = self.Rotate_Arm
+    	self.Rotate_Arm = self.Holder_Arm
+    	self.Holder_Arm = TEMP
+
+    	TEMP = self.Rotate_Gripper
+    	self.Rotate_Gripper = self.Holder_Gripper
+    	self.Holder_Gripper = TEMP
+
+    def Deal_With_ROSimg(self, ROSimage_message):
+    	cv_msg = cv_bridge.CVBridge.imgmsg_to_cv2(ROSimage_message, desired_encoding='passthrough')
+    	### Image Processing Below ###
+
+    def Check_Initial_State(self):
+    	#Check the 1st face
+    	rospy.Subscriber('/cameras/head_camera/image', Image, self.Deal_With_ROSimg)
+    	
+        # Turn 180 degrees, check the 2nd face
+    	joint_angles = self.Holder_Arm.joint_angles() # get current joint angles
+    	joint_angles[self.Holder_Arm.name + '_w1'] += pi # pi is from numpy, check the imported modules
+    	self.Move_Joints(joint_angles, self.Holder_Arm)
+    	rospy.Subscriber('/cameras/head_camera/image', Image, self.Deal_With_ROSimg)
+
+    	# Some constants below to find the 3rd face
+    	# joint_angles = 
+    	self.Move_Joints(joint_angles, self.Holder_Arm)
+    	rospy.Subscriber('/cameras/head_camera/image', Image, self.Deal_With_ROSimg)
+
+    	# Use right hand to grab cube and observe
+    	goal_marker = self.cube_table['red'] #It should be changed. I need to test it.
+    	self.Grab_Cube(self.Rotate_Arm, self.Rotate_Gripper, goal_marker)
+    	self.Leave_Cube(self.Holder_Arm, self.Holder_Gripper)
+    	self.Exchange_Arm_Role()
+
+    	#Check the 4th face
+    	#Some constants below to find 4th face
+    	#joint_angles = 
+    	self.Move_Joints(joint_angles, self.Holder_Arm)
+    	rospy.Subscriber('/cameras/head_camera/image', Image, self.Deal_With_ROSimg)
+
+    	#Check the 5th face, turn 180 degrees
+    	joint_angles[self.Holder_Arm.name +'_w1'] += pi
+    	self.Move_Joints(joint_angles, self.Holder_Arm)
+        rospy.Subscriber('/cameras/head_camera/image', Image, self.Deal_With_ROSimg)
+        
+        # Some constants below to find the 6th face
+    	# joint_angles = 
+    	self.Move_Joints(joint_angles, self.Holder_Arm)
+    	rospy.Subscriber('/cameras/head_camera/image', Image, self.Deal_With_ROSimg)
+
+    	print('Got the initial state of the Cube')
+
 
     # Control Camera, camera should be one of the cameras specified in __init__ function, line46
     def Control_Camera(self, camera, command):
@@ -138,6 +223,7 @@ class PlayCube():
                 print('mission complete!')
                 print('current joint angles: ', self.Left_Arm.joint_angles())
                 camera_command = raw_input('Controling Camera, Please enter open or close: \n')
+                # This is to test if we could control camera to open or close
                 which_camera = raw_input('Please choose which camera to control: left, right, head \n')
                 if which_camera == 'left':
                 	which_camera = self.Left_Hand_Camera
