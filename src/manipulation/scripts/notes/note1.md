@@ -1,6 +1,6 @@
 ﻿# EE106a Project Notes 1 by Lingyao Zhang
 
-标签（空格分隔）： Robotics 
+Tag： Robotics 
 
 ---
 
