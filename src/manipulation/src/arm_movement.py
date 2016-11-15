@@ -92,12 +92,10 @@ class Magic_Cube(object):
         self._rs.enable()
         print("Running. Ctrl-c to quit")
 
-
     def Image_Processing(self, ROSimage_message):
     	cv_msg = cv_bridge.CVBridge.imgmsg_to_cv2(ROSimage_message, desired_encoding='passthrough')
     	### Image Processing Below ###
     	##############################
-
     # The following three functions describe how to control the Gripper 
     def Gripper_Control(self,Gripper,command):
     	assert (sate == 'open' or state == 'close'),'The Gripper can only be open or close?'
@@ -131,15 +129,15 @@ class Magic_Cube(object):
     	#initial state
     	left_angles = Joint_Convert(0,'left')
     	right_angles = Joint_Convert(0,'right')
-    	self.Move_Joints(left_angles,Left_Arm)
-    	self.Move_Joints(right_angles,Right_Arm)
+    	self.Move_Joints('left',left_angles)
+    	self.Move_Joints('right',right_angles)
     	Left_Gripper('open')
     	Right_Gripper('open')
     	rospy.sleep(0.5)
 
     	#prone to get cube
     	left_angles = Joint_Convert(1,'left')
-    	self.Move_Joints(left_angles,Left_Arm)
+    	self.Move_Joints('left',left_angles)
     	rospy.sleep(0.5)
     	#There is a thing that can be optimaized
     	wait_key = raw_input('Please place the cube and press the enter key to start scan cube.')
@@ -147,43 +145,43 @@ class Magic_Cube(object):
 
     	#Check 1st side
     	left_angles = Joint_Convert(2,'left')
-    	self.Move_Joints(left_angles,Left_Arm)
+    	self.Move_Joints('left',left_angles)
     	rospy.sleep(0.5)
 
     	#Check 2nd side
     	left_angles[Left_Arm.name + '_w1'] +=pi
-    	self.Move_Joints(left_angles,Left_Arm)
+    	self.Move_Joints('left',left_angles)
     	rospy.sleep(0.5)
 
     	#Check 3rd side
     	left_angles[Left_Arm.name + '_w1'] -=pi/2
-    	self.Move_Joints(left_angles,Left_Arm)
+    	self.Move_Joints('left',left_angles)
     	get_marker = self.Get_Marker(Left_Arm)
     	self.Grab_Cube(Right_Arm,get_marker,'hori')
     	self.Leave_Cube(Left_Arm)
     	right_angles = Joint_Convert(3,'right')
-    	self.Move_Joints(right_angles,Right_Arm)
+    	self.Move_Joints('right',right_angles)
     	rospy.sleep(0.5)
 
 
     	#Check 4th side
     	right_angles[Right_Arm.name + '_w1'] +=pi/2
-    	self.Move_Joints(right_angles,Right_Arm)
+    	self.Move_Joints('right',right_angles)
     	rospy.sleep(0.5)
 
     	#Check 5th side
     	right_angles[Right_Arm.name + '_w1'] -=pi/2
-    	self.Move_Joints(right_angles,Right_Arm)
+    	self.Move_Joints('right',right_angles)
     	get_marker = self.Get_Marker(Left_Arm)
     	self.Grab_Cube(Left_Arm,'vert')
     	self.Leave_Cube(Right_Arm)
     	left_angles = Joint_Convert(4,'right')
-    	self.Move_Joints(left_angles,Left_Arm)
+    	self.Move_Joints('left',left_angles)
     	rospy.sleep(0.5)
 
     	#Check 6th side
     	left_angles[Left_Arm.name + '_w1'] +=pi
-    	self.Move_Joints(left_angles,Left_Arm)
+    	self.Move_Joints('left',left_angles)
     	rospy.sleep(0.5)
 
     	raw_input('Scan sides finished.')
@@ -273,145 +271,201 @@ class Magic_Cube(object):
     		print('Invalid input Handness for Grab_Cube function')
 
     def Leave_Cube(self,Handness):
-    	if Handness =='left':
-    		self.Gripper_Control(Left_Gripper,'open')
-    		self.Move_Joints(Left_Arm,left_hang)
-    	elif Handness == 'right':
-    		self.Gripper_Control(Right_Gripper,'close')
-    		self.Move_Joints(Left_Arm,right_hang)
-    	else:
-    		print('Invalid input parameter for Leave Cube function.'
+        if Handness =='left':
+            self.Gripper_Control(Left_Gripper,'open')
+            self.Move_Joints(Left_Arm,left_hang)
+        elif Handness == 'right':
+            self.Gripper_Control(Right_Gripper,'close')
+            self.Move_Joints(Left_Arm,right_hang)
+        else:
+            print 'Invalid input parameter for Leave Cube function.'
+
+    def Rotation(self,Handness,radian):
+        if Handness =='left':
+            joint_angle = self.Left_Arm.joint_angles
+            joint_angle[Left_Arm.name + '_w1'] +=radian
+            self.Move_Joints('left',left_angles)
+        if Handenss =='right':
+            joint_angle = self.Right_Arm.joint_angles
+            joint_angle[Right_Arm.name + '_w1'] +=radian
+            self.Move_Joints('right',right_angles)
 
     def One_Turn(self,target_marker,radian):
-    	def find_location(AR_marker,Handness):
-    		if Handness == 'left':
-    			if AR_marker == 'ar_marker_1':
-    				m1 = {'ar_marker_2':'upper_left','ar_marker_5':'upper_right',
-    						'ar_marker_3':'front', 'ar_marker_4':'back',
-    						'ar_marker_1':'lower_left','ar_marker_6':'lower_right'}
-    			elif AR_marker == 'ar_marker_2':
-    				m1 = {'ar_marker_5':'upper_left','ar_marker_6':'upper_right',
-    						'ar_marker_3':'front', 'ar_marker_4':'back',
-    						'ar_marker_2':'lower_left','ar_marker_1':'lower_right'}
-    			elif AR_marker == 'ar_marker_3':
-    				m1 = {'ar_marker_6':'upper_left','ar_marker_4':'upper_right',
-    						'ar_marker_1':'front', 'ar_marker_5':'back',
-    						'ar_marker_3':'lower_left','ar_marker_2':'lower_right'}
-    			elif AR_marker == 'ar_marker_4':
-    				m1 = {'ar_marker_2':'upper_left','ar_marker_3':'upper_right',
-    						'ar_marker_1':'front', 'ar_marker_5':'back',
-    						'ar_marker_4':'lower_left','ar_marker_6':'lower_right'}
-    			elif AR_marker == 'ar_marker_5':
-    				m1 = {'ar_marker_2':'upper_left','ar_marker_4':'upper_right',
-    						'ar_marker_5':'front', 'ar_marker_1':'back',
-    						'ar_marker_3':'lower_left','ar_marker_6':'lower_right'}
-    			elif AR_marker == 'ar_marker_6':
-    				m1 = {'ar_marker_1':'upper_left','ar_marker_2':'upper_right',
-    						'ar_marker_3':'front', 'ar_marker_4':'back',
-    						'ar_marker_6':'lower_left','ar_marker_5':'lower_right'}
-    		elif Handness == 'right':
-    			if AR_marker == 'ar_marker_1':
-    				m1 = {'ar_marker_6':'upper_left','ar_marker_4':'upper_right',
-    						'ar_marker_1':'front', 'ar_marker_5':'back',
-    						'ar_marker_3':'lower_left','ar_marker_2':'lower_right'}
-    			elif AR_marker == 'ar_marker_2':
-    				m1 = {'ar_marker_2':'upper_left','ar_marker_4':'upper_right',
-    						'ar_marker_5':'front', 'ar_marker_1':'back',
-    						'ar_marker_3':'lower_left','ar_marker_6':'lower_right'}
-    			elif AR_marker == 'ar_marker_3':
-    				m1 = {'ar_marker_2':'upper_left','ar_marker_4':'upper_right',
-    						'ar_marker_5':'front', 'ar_marker_1':'back',
-    						'ar_marker_3':'lower_left','ar_marker_6':'lower_right'}
-    			elif AR_marker == 'ar_marker_4':
-    				m1 = {'ar_marker_1':'upper_left','ar_marker_2':'upper_right',
-    						'ar_marker_3':'front', 'ar_marker_4':'back',
-    						'ar_marker_6':'lower_left','ar_marker_5':'lower_right'}
-    			elif AR_marker == 'ar_marker_5':
-    				m1 = {'ar_marker_1':'upper_left','ar_marker_2':'upper_right',
-    						'ar_marker_3':'front', 'ar_marker_4':'back',
-    						'ar_marker_6':'lower_left','ar_marker_5':'lower_right'}
-    			elif AR_marker == 'ar_marker_6':
-    				m1 = {'ar_marker_2':'upper_left','ar_marker_5':'upper_right',
-    						'ar_marker_3':'front', 'ar_marker_4':'back',
-    						'ar_marker_1':'lower_left','ar_marker_6':'lower_right'}
+        def find_location(AR_marker,target_marker,Handness):
+            if Handness == 'left':
+                if AR_marker == 'ar_marker_1':
+                    m1 = {'ar_marker_2':'upper_left','ar_marker_5':'upper_right',
+                            'ar_marker_3':'front', 'ar_marker_4':'back',
+                            'ar_marker_1':'lower_left','ar_marker_6':'lower_right'}
+                elif AR_marker == 'ar_marker_2':
+                    m1 = {'ar_marker_5':'upper_left','ar_marker_6':'upper_right',
+                            'ar_marker_3':'front', 'ar_marker_4':'back',
+                            'ar_marker_2':'lower_left','ar_marker_1':'lower_right'}
+                elif AR_marker == 'ar_marker_3':
+                    m1 = {'ar_marker_6':'upper_left','ar_marker_4':'upper_right',
+                            'ar_marker_1':'front', 'ar_marker_5':'back',
+                            'ar_marker_3':'lower_left','ar_marker_2':'lower_right'}
+                elif AR_marker == 'ar_marker_4':
+                    m1 = {'ar_marker_2':'upper_left','ar_marker_3':'upper_right',
+                            'ar_marker_1':'front', 'ar_marker_5':'back',
+                            'ar_marker_4':'lower_left','ar_marker_6':'lower_right'}
+                elif AR_marker == 'ar_marker_5':
+                    m1 = {'ar_marker_2':'upper_left','ar_marker_4':'upper_right',
+                            'ar_marker_5':'front', 'ar_marker_1':'back',
+                            'ar_marker_3':'lower_left','ar_marker_6':'lower_right'}
+                elif AR_marker == 'ar_marker_6':
+                    m1 = {'ar_marker_1':'upper_left','ar_marker_2':'upper_right',
+                            'ar_marker_3':'front', 'ar_marker_4':'back',
+                            'ar_marker_6':'lower_left','ar_marker_5':'lower_right'}
+            elif Handness == 'right':
+                if AR_marker == 'ar_marker_1':
+                    m1 = {'ar_marker_6':'upper_left','ar_marker_4':'upper_right',
+                            'ar_marker_1':'front', 'ar_marker_5':'back',
+                            'ar_marker_3':'lower_left','ar_marker_2':'lower_right'}
+                elif AR_marker == 'ar_marker_2':
+                    m1 = {'ar_marker_2':'upper_left','ar_marker_4':'upper_right',
+                            'ar_marker_5':'front', 'ar_marker_1':'back',
+                            'ar_marker_3':'lower_left','ar_marker_6':'lower_right'}
+                elif AR_marker == 'ar_marker_3':
+                    m1 = {'ar_marker_2':'upper_left','ar_marker_4':'upper_right',
+                            'ar_marker_5':'front', 'ar_marker_1':'back',
+                            'ar_marker_3':'lower_left','ar_marker_6':'lower_right'}
+                elif AR_marker == 'ar_marker_4':
+                    m1 = {'ar_marker_1':'upper_left','ar_marker_2':'upper_right',
+                            'ar_marker_3':'front', 'ar_marker_4':'back',
+                            'ar_marker_6':'lower_left','ar_marker_5':'lower_right'}
+                elif AR_marker == 'ar_marker_5':
+                    m1 = {'ar_marker_1':'upper_left','ar_marker_2':'upper_right',
+                            'ar_marker_3':'front', 'ar_marker_4':'back',
+                            'ar_marker_6':'lower_left','ar_marker_5':'lower_right'}
+                elif AR_marker == 'ar_marker_6':
+                    m1 = {'ar_marker_2':'upper_left','ar_marker_5':'upper_right',
+                            'ar_marker_3':'front', 'ar_marker_4':'back',
+                            'ar_marker_1':'lower_left','ar_marker_6':'lower_right'}
+            return m1
+        def Get_lower_right(position):
+            key_list=[]  
+            value_list=[]  
+            for key,value in position.items():  
+                key_list.append(key)  
+                value_list.append(value)   
+            get_value_index = value_list.index('lower_right')  
+            return key_list[get_value_index]  
+        def Get_lower_left(position):
+            key_list=[]  
+            value_list=[]  
+            for key,value in position.items():  
+                key_list.append(key)  
+                value_list.append(value)   
+            get_value_index = value_list.index('lower_left')  
+            return key_list[get_value_index]
 
-
-    		return m1
-
-    	if self.Holder_Arm.name =='left':
-    		AR_marker = Get_Marker('left')
-    		self.Handness = 'left'
-    		position = find_location(AR_marker,'left')
-    		??????????????????????????
-    		position = position[target_marker]
-    	elif self.Holder_Arm.name =='right':
-    		AR_marker = Get_Marker('right')
-    		self.Handness = 'right'
-    		position = find_location(AR_marker,'right')
-    		position = position[target_marker]
-    		??????????????????????????
-    	
-
-
-
-
-
-
-
-
-
+        if self.Holder_Arm.name =='left':
+            left_marker = self.Get_Marker('left')
+            self.Handness = 'left'
+            position = find_location(left_marker,target_marker,'left')
+            self.Leave_Cube('right')
+            #find the motion state
+            if tar_position =='lower_left':
+                low_right_marker = Get_lower_right(position)
+                self.Grab_Cube('right',low_right_marker)
+                self.Rotation('left',radian)
+                self.Leave_Cube('right')
+            elif tar_position =='lower_right'：
+                self.Grab_Cube('right',target_marker)
+                self.Rotation('right',radian)
+                self.Leave_Cube('right')
+            elif tar_position =='upper_left':
+                self.Rotation('left',pi)
+                self.Grab_Cube('right',target_marker)
+                self.Leave_Cube('left')
+                #There`s a bug
+                low_left_marker = Get_lower_right(position)
+                self.Grab_Cube('right',lower_left_marker)
+                self.Rotation('right',radian)
+            elif tar_position =='upper_right':
+                low_right_marker = Get_lower_right(position)
+                self.Grab_Cube('right',low_right_marker)
+                self.Leave_Cube('left')
+                self.Rotation('right',pi)
+                self.Grab_Cube('left',target_position)
+                self.Rotation('left',radian)
+                self.Leave_Cube('right')
+            elif tar_position == 'front':
+                self.Rotation('left',pi/2)
+                #Here has a bug
+                self.Rotation('right',radian)
+                low_left_marker = Get_Marker('left')
+                self.Leave_Cube('left')
+                self.Grab_Cube('left',low_left_marker)
+                self.Leave_Cube('right')
+            elif tar_position =='back':
+                self.Rotation('left',(3*pi)/2)
+                self.Rotation('right',radian)
+                low_left_marker = Get_Marker('left')
+                self.Leave_Cube('left')
+                self.Grab_Cube('left',low_left_marker)
+                self.Leave_Cube('right')
+            else:
+                print 'Invalid target_marker in One_Turn function.'
+        elif self.Holder_Arm.name == 'right':
+            right_makrer = self.Get_Marker('right')
+            self.Handness = 'right'
+            position = find_location(right_makrer,target_marker,'right')
+            self.Leave_Cube('left')
+            if tar_position =='lower_right':
+                low_left_marker = Get_lower_left(position)
+                self.Grab_Cube('left',low_left_marker)
+                self.ROtation('right',radian)
+                self.Leave_Cube('left')
+            elif tar_position == 'lower_left':
+                self.Grab_Cube('left',target_marker)
+                self.Rotation('right',radian)
+                self.Leave_Cube('left')
+            elif tar_position == 'upper_right':
+                self.Rotation('right',pi)
+                self.Grab_Cube('left',target_marker)
+                self.Leave_Cube('right')
+                #There`s must exist a bug
+                low_right_marker = Get_lower_left(position)
+                self.Grab_Cube('left',low_right_marker)
+                self.Rotation('left',radian)
+            elif tar_position =='upper_left':
+                low_left_marker = Get_lower_left(position)
+                self.Grab_Cube('left',low_left_marker)
+                self.Leave_Cube('right')
+                self.Rotation('left',pi)
+                self.Grab_Cube('right',target_position)
+                self.Rotation('right',radian)
+                self.Leave_Cube('left')
+            elif tar_position=='front':
+                self.Rotation('right',pi/2)
+                self.Rotation('left',radian)
+                low_left_marker = Get_Marker('right')
+                self.Leave_Cube('right')
+                self.Grab_Cube('right',low_right_marker)
+                self.Leave_Cube('left')
+            elif tar_position=='back':
+                self.Rotation('right',(3*pi)/2)
+                self.Rotation('left',radian)
+                low_right_marker = Get_Marker('right')
+                self.Leave_Cube('right')
+                self.Grab_Cube('right',low_right_marker)
+                self.Leave_Cube('left')
 
 	def Process_Thread(self):
 		rospy.Subscriber(args.move_topic, MoveMessage, callback) #MoveMessage得自己编
-
-		self.First_Grasp()
 		raw_input('Everything is Ready. Press ''Enter'' to go!!!')
-		
-
 
         while not rospy.is_shutdown():
     		if not self._rs.state().enabled:
         		rospy.logerr("Control rate timeout.")
         	break
 
-
-	# def assign_xyz(arr, xyz):
-	#     xyz.x = arr[0]
-	#     xyz.y = arr[1]
-	#     xyz.z = arr[2]
-	#     if hasattr(xyz, 'w'):
-	#         xyz.w = arr[3]
-	#     return xyz
-
- #    def goto(trans, rot, Handness):
- #    	if Handness == 'right'
-	#     	planner = self.MoveIt_right_arm
-	#     else:
-	#         planner = left_planner
-
-	#     goal = PoseStamped()
-	#     goal.header.frame_id = BASE_FRAME
-
-	#     assign_xyz(trans, goal.pose.position)
-	#     assign_xyz(rot, goal.pose.orientation)
-	#     # find a plan to get there
-	#     planner.set_pose_target(goal)
-	#     planner.set_start_state_to_current_state()
-	#     plan = planner.plan()
-	#     # go there
-	#     planner.execute(plan)
-	#     rospy.sleep(0.5)
-
-
-
-
-
-
-
-
-
-
-
+            #Start turn the cube using the algorithm.
+            self.Initial_Check()
+            #For example
+            self.One_Turn('ar_marker_3',pi/2)          
 
 if __name__ == '__main__':
 
