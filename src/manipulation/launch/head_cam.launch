@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="marker_size" default="1" />
+  <arg name="marker_size" default="1.05" />
   <arg name="max_new_marker_error" default="0.08" />
   <arg name="max_track_error" default="0.3" />
   <arg name="cam_image_topic" default="/cameras/head_camera/image" />

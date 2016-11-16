@@ -27,8 +27,8 @@ joint_states.append([0.0, -0.08935438089432535, 3.0533887582859163, 2.1820876707
 
 loose_position = []
 ##position0
-loose_position.append([])
+loose_position.append(joint_states[1])
 ##position1
-loose_position.append([])
+loose_position.append(joint_states[2])
 
 

@@ -24,7 +24,7 @@ while not done and not rospy.is_shutdown():
 	else:
 		gripper = right_gripper
 	control = raw_input('Controlling the gripper: 1 for open, 2 for close\n ')
-	gripper.set_holding_force(70)
+	gripper.set_holding_force(100)
 	if control == '1':
 		gripper.open(block=True)
 		rospy.sleep(1.0)
