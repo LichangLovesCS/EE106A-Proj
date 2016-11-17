@@ -12,7 +12,7 @@ from geometry_msgs.msg import PoseStamped
 
 import constant_parameters
 from constant_parameters import Joint_Names,joint_states,loose_position
-from ar_track_alvar_msgs.msg import AlvarMarker
+from ar_track_alvar_msgs.msg import AlvarMarkers
 
 from numpy import pi
 import math
@@ -24,10 +24,11 @@ from baxter_core_msgs.srv import (
 )
 
 loose_position = constant_parameters.loose_position[0]
-lse_position = constant_parameters.loose_position[1]
+lse_position = constant_parameters.loose_position[0]
 
 right_hang = {'right_s0':loose_position[11], 'right_s1':loose_position[12], 'right_e0':loose_position[9], 'right_e1':loose_position[10],
                 'right_w0':loose_position[13], 'right_w1':loose_position[14], 'right_w2':loose_position[15]}
+
 left_hang = {'left_s0':lse_position[4], 'left_s1':lse_position[5], 'left_e0':lse_position[2], 'left_e1':lse_position[3],
                 'left_w0':lse_position[6], 'left_w1':lse_position[7], 'left_w2':lse_position[8]}
 
@@ -65,10 +66,15 @@ class Magic_Cube(object):
 
 		self.Left_Gripper = baxter_interface.Gripper('left', CHECK_VERSION)
 		self.Left_Gripper.set_holding_force(80) 
+		print('Calibrating left gripper...')
+		self.Left_Gripper.calibrate()
+		rospy.sleep(0.5)
 
 		self.Right_Gripper = baxter_interface.Gripper('right', CHECK_VERSION)
 		self.Right_Gripper.set_holding_force(80) 
-
+		print('Calibrating right gripper...')
+		self.Right_Gripper.calibrate()
+		rospy.sleep(0.5)
 		#relative transformation 
 		self.TFlistener = tf.TransformListener()
 
@@ -90,33 +96,36 @@ class Magic_Cube(object):
 		### Image Processing Below ###
 		##############################
 
-	def Camera_Control(self, camera, command):
-		assert (command =='open' or command=='close'), 'only two types of command  are allowed.'
+	def Camera_Control(self, camera_name, command):
+		assert (command =='open' or command=='close'), 'only two types of command are allowed. \n'
+		assert camera_name in camera_threads, 'Not given a valid camera name! \n'
+
 		ls = rospy.ServiceProxy('cameras/list', ListCameras)
 		rospy.wait_for_service('cameras/list', timeout=10)
 		resp = ls()
 		commands = {'left_hand_camera':"Thread(target=self.Parallel_Thread, args=('cd ../launch; roslaunch left_wrist.launch',))",
 		            'right_hand_camera': "Thread(target=self.Parallel_Thread, args=('cd ../launch; roslaunch right_wrist.launch',))",
 		            'head_camera': "Thread(target=self.Parallel_Thread, args=('cd ../launch; roslaunch head_cam.launch',))"}
-		if camera not in resp.cameras:
-			print('Cannot control ' + camera + ', other 2 cameras are open. ')
+		if camera_name not in resp.cameras:
+			print('Cannot control ' + camera_name + ', other 2 cameras are open. ')
 		else:
 			if command == 'open':
-				if not camera_threads[camera]:
-					camera_threads[camera] = eval(commands[camera])
-					camera_threads[camera].start()
-					print(camera +' is opened.')
+				if not camera_threads[camera_name]:
+					camera_threads[camera_name] = eval(commands[camera_name])
+					camera_threads[camera_name].start()
+					print(camera_name +' is opened.')
 				else:
-					print(camera + ' has already been launched!')
+					print(camera_name + ' has already been launched!')
 			elif command == 'close':		
-				if camera == 'left_hand_camera':
+				if camera_name == 'left_hand_camera':
 					camera = baxter_interface.CameraController('left_hand_camera')
-				elif camera == 'right_hand_camera':
+				elif camera_name == 'right_hand_camera':
 					camera = baxter_interface.CameraController('right_hand_camera')
 				else:
 					camera = baxter_interface.CameraController('head_camera')
-				camera_threads[camera].join()
-				camera_threads[camera] = None
+				if  camera_threads[camera_name]:
+					camera_threads[camera_name].join()
+					camera_threads[camera_name] = None
 				camera.close()
 				print(camera._id+' is closed.')
 				
@@ -191,15 +200,15 @@ class Magic_Cube(object):
 		#Check 3rd side
 		raw_input('\n Press enter to continue!')
 		print('Checking 3rd side')
-		angle = left_angles[self.Left_Arm.name + '_w2'] - pi/2
-		left_angles[self.Left_Arm.name + '_w2'] = self.Trans_Angle(angle)
-		self.Move_Joints('left',left_angles)
-		get_marker = self.Get_Marker('left')
+		self.Move_Joints('left', left_hang)
+		self.Move_Joints('right', right_hang)
 
+		#move right arm to a safe position		
+		raw_input('Start getting marker!!!\n')
+		get_marker = self.Get_Marker('right')
 		print('Mission completed, get your marker: ', str(get_marker))
-		raw_input('\n Press enter to continue!')
+		self.Grab_Cube(self.Right_Arm, get_marker,'hori')
 
-		self.Grab_Cube(self.Right_Arm,self.get_marker,'hori')
 		self.Leave_Cube(self.Left_Arm)
 		right_angles = Joint_Convert(3,'right')
 		self.Move_Joints('right',right_angles)
@@ -264,7 +273,7 @@ class Magic_Cube(object):
 				detected.header.frame_id ='ar_marker_' + str(message.id)
 				print('I have detected ' + detected.header.frame_id)
 		while not detected.header.frame_id:
-			rospy.Subscriber("ar_pose_marker", AlvarMarker, call)
+			rospy.Subscriber("ar_pose_marker", AlvarMarkers, call)
 		return detected.header.frame_id
 
 	def IK_MoveIt(Arm,rot,StartPosition=False, MiddlePosition=False,EndPosition=False , Accuracy=0.03):
@@ -303,6 +312,16 @@ class Magic_Cube(object):
 		                           0.0)         # jump_threshold           
 		Arm.execute(plan) 
 
+	def Get_End_Point_Positon(self, Handness):
+		if Handness == 'left':
+			arm = self.Left_Arm
+		else:
+			arm = self.Right_Arm
+		for i in range(50):
+            POSE = arm.endpoint_pose()
+            EndPoint = [POSE['position'].x ,POSE['position'].y, POSE['position'].z]
+        return EndPoint
+
 	def Grab_Cube(self,Handness,AR_marker,direction ='hori',Accuracy=0.03,Offset=0.5):
 		#There are two direction that can grasp the Arm, one is vertical and another is horizontal.
 	
@@ -310,25 +329,38 @@ class Magic_Cube(object):
 			self.Gripper_Control(self.Left_Gripper,'open')
 			self.Move_Joints(self.Left_Arm,left_hang)
 		elif Handness == 'right':
-			self.Gripper_Control(self.Right_Gripper,'close')
+			self.Gripper_Control(self.Right_Gripper,'open')
 			self.Move_Joints(self.Left_Arm,right_hang)
 		else:
 			print('Invalid input parameter for Grab_Cube function.')
-		tr,rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
+		trans, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
+		start_position = self.Get_End_Point_Positon(Handness)
+		end_position = trans
+		print('Get translation: ', trans)
+		print('Get rotation: ', rot)
+
+ 		############################## PROBLEM HERE ##################################
+		raw_input('Press enter to continue!')
+		rot = np.eye(3)
 		omega, theta = eqf.quaternion_to_exp(rot)
-		R1 = create_rbt(omega, theta, tr)
-		R2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,Offset],[0,0,0,1]])
-		R = R2.dot(R1);
-		trans = np.array([R[0][3],R[1][3],R[2][3]])
+		R1 = eqf.create_rbt(omega, theta, trans)
+		R2 = np.matrix([[1,0,0,0],[0,1,0,0],[0,0,1,Offset],[0,0,0,1]])
+		R = np.matrix(R1) * R2
+		_, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
+		trans = np.array([R[0][3],R[1][3],R[2][3]])	
+		############################## PROBLEM HERE ##################################
+
+		
 		if Handness == 'left':
-			self.IK_MoveIt(self.Left_Arm, rot=rot, StartPosition=left_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
-			# def IK_MoveIt(Arm,rot,StartPosition=False, MiddlePosition=False,EndPosition=False , Accuracy=0.03):
-			self.Gripper_Control(self.Left_Gripper, 'close')
-		elif Handness == 'right':
-			self.IK_MoveIt(self.Right_Arm,rot=rot, StartPosition=right_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
-			self.Gripper_Control(self.Left_Gripper, 'close')
+			arm = self.Left_Arm
+			gripper = self.Left_Gripper
+		elif Handness = 'right':
+			arm = self.Right_Arm
+			gripper = self.Right_Gripper
 		else:
 			print('Invalid input Handness for Grab_Cube function')
+		self.IK_MoveIt(arm,rot=rot, StartPosition=right_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
+		self.Gripper_Control(gripper, 'close')
 
 	def Leave_Cube(self,Handness):
 	    if Handness =='left':
@@ -517,12 +549,13 @@ class Magic_Cube(object):
 		os.system(string)
 	def Process_Thread(self):
 		#rospy.Subscriber(args.move_topic, MoveMessage, callback) 
-		raw_input('Everything is Ready. Press ''Enter'' to go!!!')
+		raw_input('Everything is Ready. Press ''Enter'' to go!!!\n')
 		#Start turn the cube using the algorithm.
 		self.Camera_Control('right_hand_camera','close')
 		self.Camera_Control('head_camera','open')
 		self.Camera_Control('left_hand_camera','open')
-		print('Start Initial Check!!!')
+
+		raw_input('Start Initial Check!!! Press ''Enter'' to go!!!\n')
 		self.Initial_Check()
 	    # self.Camera_Control('head','close')
 		# self.Camera_Control('right','open')

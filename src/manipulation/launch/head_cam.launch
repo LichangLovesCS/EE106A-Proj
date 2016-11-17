@@ -17,7 +17,7 @@
 
   <node name="head_cam" pkg = "baxter_tools" type="camera_control.py" args="$(arg open) $(arg resolution)" />
 
-  <node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg max_freq) $(arg marker_resolution) $(arg marker_margin)" />
+  <node name="ar_track_alvar0" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg max_freq) $(arg marker_resolution) $(arg marker_margin)" />
 
 
 
