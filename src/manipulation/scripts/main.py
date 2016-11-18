@@ -205,9 +205,10 @@ class Magic_Cube(object):
 
 		#move right arm to a safe position		
 		raw_input('Start getting marker!!!\n')
-		get_marker = self.Get_Marker('right')
-		print('Mission completed, get your marker: ', str(get_marker))
-		self.Grab_Cube(self.Right_Arm, get_marker,'hori')
+		marker = self.Get_Marker('right',True)
+		print('Mission completed, get your marker: ', str(marker))
+		raw_input('Finish getting marker, start grab cube!!!\n')
+		self.Grab_Cube(self.Right_Arm, marker,'hori')
 
 		self.Leave_Cube(self.Left_Arm)
 		right_angles = Joint_Convert(3,'right')
@@ -264,17 +265,22 @@ class Magic_Cube(object):
 		else:
 			print('Invalid input parameter for Move_Joints function.')
 
-	def Get_Marker(self, Handness):
+	def Get_Marker(self, Handness, verbose = False):
 		#Get Marker`s information
 		detected = PoseStamped()
 		print('Start getting marker!')
 		def call(message):	
 			if message.id and Handness in message.header.frame_id:
 				detected.header.frame_id ='ar_marker_' + str(message.id)
+				if verbose:
+					detected.pose.orientation = message.markers.pose.pose.orientation
 				print('I have detected ' + detected.header.frame_id)
 		while not detected.header.frame_id:
 			rospy.Subscriber("ar_pose_marker", AlvarMarkers, call)
-		return detected.header.frame_id
+		if not verbose:
+			return detected.header.frame_id
+		else:
+			return detected
 
 	def IK_MoveIt(Arm,rot,StartPosition=False, MiddlePosition=False,EndPosition=False , Accuracy=0.03):
 		waypoints = []  
@@ -333,21 +339,24 @@ class Magic_Cube(object):
 			self.Move_Joints(self.Left_Arm,right_hang)
 		else:
 			print('Invalid input parameter for Grab_Cube function.')
-		trans, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
+		trans, rot= self.TFlistener.lookupTransform('/base', AR_marker.header.frame_id,rospy.Time(0))
 		start_position = self.Get_End_Point_Positon(Handness)
 		end_position = trans
 		print('Get translation: ', trans)
-		print('Get rotation: ', rot)
+		
 
  		############################## PROBLEM HERE ##################################
 		raw_input('Press enter to continue!')
-		rot = np.eye(3)
+		#rot = np.eye(3)
 		omega, theta = eqf.quaternion_to_exp(rot)
 		R1 = eqf.create_rbt(omega, theta, trans)
-		R2 = np.matrix([[1,0,0,0],[0,1,0,0],[0,0,1,Offset],[0,0,0,1]])
-		R = np.matrix(R1) * R2
-		_, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
+		R2 = np.append([[1,0,0,0],[0,1,0,0],[0,0,1,Offset],[0,0,0,1]])
+		R = R1.dot(R2)
+		#_, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
 		trans = np.array([R[0][3],R[1][3],R[2][3]])	
+		orientation = AR_marker.pose.orientation
+		orientation.z = -orientation.z
+		print('Get rotation: ', orientation)
 		############################## PROBLEM HERE ##################################
 
 		
@@ -359,7 +368,8 @@ class Magic_Cube(object):
 			gripper = self.Right_Gripper
 		else:
 			print('Invalid input Handness for Grab_Cube function')
-		self.IK_MoveIt(arm,rot=rot, StartPosition=right_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
+		self.IK_MoveIt(arm,rot=orientation, StartPosition=right_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
+		rospy.sleep(0.5)
 		self.Gripper_Control(gripper, 'close')
 
 	def Leave_Cube(self,Handness):
