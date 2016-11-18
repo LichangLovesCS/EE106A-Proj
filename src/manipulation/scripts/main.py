@@ -343,32 +343,35 @@ class Magic_Cube(object):
 		start_position = self.Get_End_Point_Positon(Handness)
 		end_position = trans
 		print('Get translation: ', trans)
-		
+		Offseet = 0
 
  		############################## PROBLEM HERE ##################################
-		raw_input('Press enter to continue!')
-		#rot = np.eye(3)
-		omega, theta = eqf.quaternion_to_exp(rot)
-		R1 = eqf.create_rbt(omega, theta, trans)
-		R2 = np.append([[1,0,0,0],[0,1,0,0],[0,0,1,Offset],[0,0,0,1]])
-		R = R1.dot(R2)
-		#_, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
-		trans = np.array([R[0][3],R[1][3],R[2][3]])	
-		orientation = AR_marker.pose.orientation
-		orientation.z = -orientation.z
-		print('Get rotation: ', orientation)
-		############################## PROBLEM HERE ##################################
+ 		while not Offseet==999:
+			Offseet = input('Please input the Offset to continue!')
 
-		
-		if Handness == 'left':
-			arm = self.Left_Arm
-			gripper = self.Left_Gripper
-		elif Handness = 'right':
-			arm = self.Right_Arm
-			gripper = self.Right_Gripper
-		else:
-			print('Invalid input Handness for Grab_Cube function')
-		self.IK_MoveIt(arm,rot=orientation, StartPosition=right_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
+			#rot = np.eye(3)
+			omega, theta = eqf.quaternion_to_exp(rot)
+			R1 = eqf.create_rbt(omega, theta, trans)
+			R2 = np.append([[1,0,0,0],[0,1,0,0],[0,0,1,Offseet],[0,0,0,1]])
+			R = R1.dot(R2)
+			#_, rot = self.TFlistener.lookupTransform('/base', AR_marker,rospy.Time(0))
+			trans = np.array([R[0][3],R[1][3],R[2][3]])	
+			orientation = AR_marker.pose.orientation
+			orientation.z = -orientation.z
+			print('Get rotation: ', orientation)
+			############################## PROBLEM HERE ##################################
+
+			
+			if Handness == 'left':
+				arm = self.Left_Arm
+				gripper = self.Left_Gripper
+			elif Handness = 'right':
+				arm = self.Right_Arm
+				gripper = self.Right_Gripper
+			else:
+				print('Invalid input Handness for Grab_Cube function')
+			self.IK_MoveIt(arm,rot=orientation, StartPosition=right_hang, MiddlePosition=trans, EndPosition=tr, Accuracy=Accuracy)
+			print('Get there.')
 		rospy.sleep(0.5)
 		self.Gripper_Control(gripper, 'close')
 
