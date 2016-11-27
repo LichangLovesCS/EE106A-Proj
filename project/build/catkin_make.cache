@@ -1,0 +1,2 @@
+manipulation
+-DCATKIN_DEVEL_PREFIX=/home/team4/ros_workspace/project/devel -DCMAKE_INSTALL_PREFIX=/home/team4/ros_workspace/project/install -G Unix Makefiles
