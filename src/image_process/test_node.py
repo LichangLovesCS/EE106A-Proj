@@ -10,7 +10,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from __future__ import print_function
 
 ######################################################
-#A Sample Program to convert Ros Image into CV image.#
+# A Sample Program to convert Ros Image into CV image. #
 ######################################################
 __author__ = 'Lichang Xu'
 __version__ = 'test_node'
