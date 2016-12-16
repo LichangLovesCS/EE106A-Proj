@@ -7,6 +7,6 @@ Gongbo Yang (gongboyang@berkeley.edu)
 Lingyao Zhang (lingyaoz1995@gmail.com)
 ```
 
-Note: The robot uses Baxter-frame hardware provided by EE106A course staff at UC Berkeley. The robot can solve Rubik's puzzle within a short period of time. There are three main components: image processing, cubic solver, and actual hardware manipulation. Code details can be found easily in each directory. 
+Note: The robot uses Baxter-frame hardware provided by EE106A course staff at UC Berkeley. The robot can solve Rubik's puzzle within a short period of time. There are three main components: image processing, cubic solver, and actual hardware manipulation. Code details can be found easily in each directory. Feel free to contact the developers if you encounter any questions.
 
 
