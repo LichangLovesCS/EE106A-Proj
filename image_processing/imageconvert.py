@@ -4,6 +4,8 @@
 # Author        : Lichang Xu
 # Created       : November, 2016
 # Last Modified : December, 2016
+# Code Reference : http://wiki.ros.org/cv_bridge/Tutorials/ConvertingBetweenROSImagesAndOpenCVImagesPython
+
 import roslib
 roslib.load_manifest('my_package')
 import sys

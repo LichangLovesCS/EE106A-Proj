@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# Filename      : send_solutioons.py
+# Author        : Gongbo Yang, Lingyao Zhang, Shijie Gao
+# Created       : November, 2016
+# Last Modified : December, 2016
+# Code Reference : https://github.com/adrianliaw/PyCuber
+
 from sys import exit as Die
 try:
 	import sys

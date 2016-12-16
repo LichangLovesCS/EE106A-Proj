@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# Filename      : main.py
+# Author        : Gongbo Yang, Lingyao Zhang, Shijie Gao
+# Created       : November, 2016
+# Last Modified : December, 2016
+# Code referece : http://docs.ros.org/kinetic/api/moveit_tutorials/html/doc/pr2_tutorials/planning/scripts/doc/move_group_python_interface_tutorial.html
+
 import sys,argparse,socket,os, thread
 from threading import Thread
 
@@ -984,13 +991,6 @@ class Magic_Cube:
 			# raw_input('stop and about to rotate:\n')
 			# Rot_Cube(n)
 			
-
-			
-
-			
-
-		
-
 	def Process_Thread(self):
 		#Start turn the cube using the algorithm.
 		# self.Camera_Control('right_hand_camera','open')

@@ -4,6 +4,7 @@
 # Author        : Lichang Xu
 # Created       : November, 2016
 # Last Modified : December, 2016
+# Code Reference : https://github.com/bluquar/cubr
 
 from sys import exit as Die
 try:
