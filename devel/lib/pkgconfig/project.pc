@@ -1,8 +1,0 @@
-prefix=/home/cc/ee106a/fa16/class/ee106a-adi/ros_workspaces/project/devel
-
-Name: project
-Description: Description of project
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/cc/ee106a/fa16/class/ee106a-adi/ros_workspaces/project/devel/lib 
-Requires: 

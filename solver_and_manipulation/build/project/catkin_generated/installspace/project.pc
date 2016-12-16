@@ -1,0 +1,8 @@
+prefix=/home/cc/ee106a/fa16/class/ee106a-adi/ros_workspace/project/install
+
+Name: project
+Description: Description of project
+Version: 0.0.0
+Cflags: -I/home/cc/ee106a/fa16/class/ee106a-adi/ros_workspace/project/install/include
+Libs: -L/home/cc/ee106a/fa16/class/ee106a-adi/ros_workspace/project/install/lib 
+Requires: geometry_msgs roscpp rospy std_msgs message_runtime

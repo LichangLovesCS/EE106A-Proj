@@ -1,8 +1,0 @@
-prefix=/home/team4/ros_workspace/project/install
-
-Name: manipulation
-Description: Description of manipulation
-Version: 0.0.0
-Cflags: -I/home/team4/ros_workspace/project/install/include
-Libs: -L/home/team4/ros_workspace/project/install/lib 
-Requires: geometry_msgs roscpp rospy std_msgs message_runtime
