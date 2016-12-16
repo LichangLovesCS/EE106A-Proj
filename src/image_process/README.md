@@ -14,7 +14,7 @@ python cube.py
 ```
 ```
 
-This opens a webcam interface where you see basically the above photo.
+This opens a webcam or USB camera interface where you see basically the above photo.
 You have 4 things:
 
 * The 9 center squares.
