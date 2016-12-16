@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Filename      : imageconvert.py
+# Author        : Lichang Xu
+# Created       : November, 2016
+# Last Modified : December, 2016
 import roslib
 roslib.load_manifest('my_package')
 import sys
