@@ -9,9 +9,9 @@ color scheme on a rubik's cube. So future users need to adjust the HSV boundarie
 # Usage
 
 Run cube:
+python cube.py
 
 ```
-python cube.py
 ```
 
 This opens a webcam interface where you see basically the above photo.
