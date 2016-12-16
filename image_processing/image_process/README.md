@@ -1,4 +1,4 @@
-A rubik's cube solver written in python 2.7 using OpenCV using your webcam.
+A rubik's cube solver written in python 2.7 using OpenCV using your webcam or USB camera.
 
 NOTE: cube uses color detection and color detection is very hard to fix for
 every possible situation, because certain light influences a color detector and the
@@ -14,7 +14,7 @@ python cube.py
 ```
 ```
 
-This opens a webcam interface where you see basically the above photo.
+This opens a webcam or USB camera interface where you see basically the above photo.
 You have 4 things:
 
 * The 9 center squares.
